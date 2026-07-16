@@ -3,7 +3,7 @@
     <!-- Floating Circular Trigger Button (Visible only when scrolled past 350px, Happy Hour active and user hasn't played, or always for Admin) -->
     <transition name="fade-slide">
       <div 
-        v-if="isVisibleOnScroll && segments.length >= 2 && (authStore.isAdmin || (isCampaignActive && !hasPlayedInThisCycle))" 
+        v-if="isVisibleOnScroll && segments.length >= 2" 
         class="fixed bottom-6 left-6 z-40 cursor-pointer group"
         @click="openModal"
       >
@@ -31,80 +31,104 @@
         aria-modal="true"
       >
         <!-- Backdrop -->
-        <div class="absolute inset-0 bg-[#1E3A32]/25 backdrop-blur-xs" @click="!hasWon || authStore.isAdmin ? closeModal() : null"></div>
+        <div class="absolute inset-0 bg-[#1E3A32]/25 backdrop-blur-xs" @click="closeModal"></div>
 
         <!-- Modal Content Card -->
         <div class="relative bg-[#FAF9F6] border border-[#EAE8E0] w-full max-w-[90vw] sm:max-w-sm rounded-2xl shadow-2xl p-4 sm:p-5 text-center space-y-4 animate-slide-up z-10">
           
-          <!-- Close Button (Hidden if won and not admin to force copying) -->
+          <!-- Close Button -->
           <button 
-            v-if="!hasWon || authStore.isAdmin"
             @click="closeModal" 
-            class="absolute top-4 right-4 w-7 h-7 rounded-full bg-white/80 border border-[#EAE8E0] flex items-center justify-center text-[#C97A62] hover:text-[#1E3A32] hover:scale-105 active:scale-95 transition-all cursor-pointer text-xs"
+            class="absolute top-4 right-4 z-30 w-7 h-7 rounded-full bg-white/80 border border-[#EAE8E0] flex items-center justify-center text-[#C97A62] hover:text-[#1E3A32] hover:scale-105 active:scale-95 transition-all cursor-pointer text-xs"
             :disabled="isSpinning"
           >
             ✕
           </button>
 
-          <!-- Header -->
-          <div class="space-y-1.5">
-            <span class="text-[9px] font-extrabold tracking-widest text-[#1E3A32] uppercase bg-[#1E3A32]/10 px-2 py-0.5 rounded-md inline-block">
-              Şans Saatleri Fırsatı
-            </span>
-            <h2 class="font-serif text-xl font-light text-[#1E3A32] tracking-tight">Şans Çarkını Çevir!</h2>
-            <p class="text-[11px] text-stone-500 font-light max-w-xs mx-auto leading-normal">
-              İndirim kuponu kazanmak için çarkı çevirin. Her dönüş kazandırır!
-            </p>
-          </div>
-
-          <!-- The Wheel Graphic (HTML5 Canvas) -->
-          <div class="relative flex justify-center items-center py-1">
-            <!-- Selector Pointer -->
-            <div class="absolute -top-1 z-20 w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[15px] border-t-[#1E3A32] drop-shadow-md"></div>
-            
-            <!-- Canvas Container -->
-            <div class="bg-white p-2 rounded-full border border-[#EAE8E0]/60 shadow-inner">
-              <canvas 
-                ref="wheelCanvas" 
-                width="250" 
-                height="250" 
-                class="rounded-full shadow-md max-w-[190px] sm:max-w-full h-auto"
-              ></canvas>
+          <!-- 1. Countdown / Played State Screen (Görüşmek Üzere) -->
+          <div v-if="!authStore.isAdmin && hasPlayedInThisCycle" class="space-y-6 py-6 animate-scale-up">
+            <div class="w-16 h-16 bg-[#1E3A32]/10 text-[#1E3A32] rounded-full flex items-center justify-center mx-auto">
+              <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
             </div>
-          </div>
-
-          <!-- Spin Action Button / Results Card -->
-          <div class="pt-1">
-            
-            <!-- Spin Button -->
+            <div class="space-y-2">
+              <h2 class="font-serif text-xl font-light text-[#1E3A32] tracking-tight">Görüşmek Üzere!</h2>
+              <p class="text-xs text-stone-500 font-light leading-relaxed max-w-[240px] mx-auto">
+                Bu ayki şans çarkı hakkınızı kullandınız. Bir sonraki hakkınıza kalan süre:
+              </p>
+            </div>
+            <div class="bg-[#1E3A32] text-white py-3 px-4 rounded-xl shadow-inner font-mono text-sm font-semibold tracking-wider">
+              {{ nextMonthCountdownText }}
+            </div>
             <button 
-              v-if="!hasWon"
-              @click="spinWheel" 
-              :disabled="isSpinning"
-              class="w-full py-3 bg-[#1E3A32] hover:bg-[#2D5A4E] text-[#FAF9F6] text-xs font-bold uppercase tracking-wider rounded-xl shadow-lg hover:shadow-xl active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              @click="isModalOpen = false"
+              class="w-full py-2.5 bg-stone-200 hover:bg-stone-300 text-stone-700 text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer"
             >
-              {{ isSpinning ? 'Çark Dönüyor...' : 'Çarkı Çevir' }}
+              Kapat
             </button>
+          </div>
 
-            <!-- Results Showcase (confetti mood) -->
-            <div v-else class="bg-white border border-[#EAE8E0] rounded-xl p-3 space-y-2 text-center shadow-xs animate-scale-up">
-              <div class="space-y-0.5">
-                <p class="text-[9px] font-bold text-stone-400 uppercase tracking-widest">Kuponunuz Hazır</p>
-                <h3 class="font-serif text-base font-light text-[#1E3A32]">{{ winningPrize.label }} Kazandınız!</h3>
-              </div>
-              
-              <div class="flex items-center justify-between bg-[#FAF9F6] border border-[#EAE8E0] rounded-lg px-3 py-2">
-                <span class="font-mono text-xs font-bold text-[#1E3A32] tracking-wider select-all">{{ winningPrize.code }}</span>
-                <button 
-                  @click="copyAndApply(winningPrize.code)"
-                  class="text-[9px] font-bold text-[#1E3A32] hover:text-[#2D5A4E] uppercase tracking-wider cursor-pointer"
-                >
-                  Kopyala & Uygula
-                </button>
-              </div>
-              <p class="text-[8px] text-stone-400 font-light">Kodu kopyalayıp Sepet sayfasındaki kupon kısmına girerek kullanabilirsiniz.</p>
+          <!-- 2. Main Game Screen -->
+          <div v-else class="space-y-4">
+            <!-- Header -->
+            <div class="space-y-1.5">
+              <span class="text-[9px] font-extrabold tracking-widest text-[#1E3A32] uppercase bg-[#1E3A32]/10 px-2 py-0.5 rounded-md inline-block">
+                Şans Saatleri Fırsatı
+              </span>
+              <h2 class="font-serif text-xl font-light text-[#1E3A32] tracking-tight">Şans Çarkını Çevir!</h2>
+              <p class="text-[11px] text-stone-500 font-light max-w-xs mx-auto leading-normal">
+                İndirim kuponu kazanmak için çarkı çevirin. Her dönüş kazandırır!
+              </p>
             </div>
 
+            <!-- The Wheel Graphic (HTML5 Canvas) -->
+            <div class="relative flex justify-center items-center py-1">
+              <!-- Selector Pointer -->
+              <div class="absolute -top-1 z-20 w-0 h-0 border-l-[10px] border-l-transparent border-r-[10px] border-r-transparent border-t-[15px] border-t-[#1E3A32] drop-shadow-md"></div>
+              
+              <!-- Canvas Container -->
+              <div class="bg-white p-2 rounded-full border border-[#EAE8E0]/60 shadow-inner">
+                <canvas 
+                  ref="wheelCanvas" 
+                  width="250" 
+                  height="250" 
+                  class="rounded-full shadow-md max-w-[190px] sm:max-w-full h-auto"
+                ></canvas>
+              </div>
+            </div>
+
+            <!-- Spin Action Button / Results Card -->
+            <div class="pt-1">
+              <!-- Spin Button -->
+              <button 
+                v-if="!hasWon"
+                @click="spinWheel" 
+                :disabled="isSpinning"
+                class="w-full py-3 bg-[#1E3A32] hover:bg-[#2D5A4E] text-[#FAF9F6] text-xs font-bold uppercase tracking-wider rounded-xl shadow-lg hover:shadow-xl active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+              >
+                {{ isSpinning ? 'Çark Dönüyor...' : 'Çarkı Çevir' }}
+              </button>
+
+              <!-- Results Showcase -->
+              <div v-else class="bg-white border border-[#EAE8E0] rounded-xl p-3 space-y-2 text-center shadow-xs animate-scale-up">
+                <div class="space-y-0.5">
+                  <p class="text-[9px] font-bold text-stone-400 uppercase tracking-widest">Kuponunuz Hazır</p>
+                  <h3 class="font-serif text-base font-light text-[#1E3A32]">{{ winningPrize.label }} Kazandınız!</h3>
+                </div>
+                
+                <div class="flex items-center justify-between bg-[#FAF9F6] border border-[#EAE8E0] rounded-lg px-3 py-2">
+                  <span class="font-mono text-xs font-bold text-[#1E3A32] tracking-wider select-all">{{ winningPrize.code }}</span>
+                  <button 
+                    @click="copyAndApply(winningPrize.code)"
+                    class="text-[9px] font-bold text-[#1E3A32] hover:text-[#2D5A4E] uppercase tracking-wider cursor-pointer"
+                  >
+                    Kopyala & Uygula
+                  </button>
+                </div>
+                <p class="text-[8px] text-stone-400 font-light">Kodu kopyalayıp Sepet sayfasındaki kupon kısmına girerek kullanabilirsiniz.</p>
+              </div>
+            </div>
           </div>
 
         </div>
@@ -124,10 +148,9 @@ const authStore = useAuthStore();
 const cartStore = useCartStore();
 
 // Timers and State variables
-const getTodayDateString = () => new Date().toISOString().split('T')[0];
-const isCampaignActive = ref(false);
-const activeTimeLeft = ref(30); // Seconds left in current campaign
-const hasPlayedInThisCycle = ref(localStorage.getItem('wheel_last_played_date') === getTodayDateString());
+const getTodayMonthString = () => new Date().toISOString().slice(0, 7); // Returns YYYY-MM
+const isCampaignActive = ref(true);
+const hasPlayedInThisCycle = ref(localStorage.getItem('wheel_last_played_month') === getTodayMonthString());
 
 const isModalOpen = ref(false);
 const isSpinning = ref(false);
@@ -141,55 +164,68 @@ const handleScroll = () => {
   isVisibleOnScroll.value = window.scrollY > 350;
 };
 
-// Default wheel segments (Varsayılan kupon olmayacağı için boş dizi ile başlatıyoruz)
-const defaultSegments = [];
+// Default wheel segments
+const defaultSegments = [
+  { code: 'SAVE10', type: 'percentage', value: 10, label: '%10 İndirim', color: '#1E3A32', textColor: '#FFFFFF' },
+  { code: 'SAVE25', type: 'amount', value: 25, label: '25 TL İndirim', color: '#C97A62', textColor: '#FFFFFF' },
+  { code: 'SAVE15', type: 'percentage', value: 15, label: '%15 İndirim', color: '#2D5A4E', textColor: '#FFFFFF' },
+  { code: 'SAVE50', type: 'amount', value: 50, label: '50 TL İndirim', color: '#E2E6DF', textColor: '#1E3A32' },
+  { code: 'SAVE20', type: 'percentage', value: 20, label: '%20 İndirim', color: '#1E3A32', textColor: '#FFFFFF' },
+  { code: 'SAVE100', type: 'amount', value: 100, label: '100 TL İndirim', color: '#C97A62', textColor: '#FFFFFF' }
+];
 
 const segments = ref([]);
 
-// Load dynamic segments on initialization and mount
 const loadSegments = () => {
-  // Clear default/old data once and start empty if they had defaults
-  if (!localStorage.getItem('wheel_defaults_purged_v2')) {
-    localStorage.removeItem('wheel_segments');
-    localStorage.setItem('wheel_defaults_purged_v2', 'true');
-  }
-
   const stored = localStorage.getItem('wheel_segments');
-  segments.value = stored ? JSON.parse(stored) : [];
+  if (stored && JSON.parse(stored).length >= 2) {
+    segments.value = JSON.parse(stored);
+  } else {
+    segments.value = [...defaultSegments];
+    localStorage.setItem('wheel_segments', JSON.stringify(defaultSegments));
+  }
 };
 loadSegments();
 
 const winningPrize = ref(null);
 let animationFrameId = null;
 
-// Timer loop configuration
-// Test: 60s passive, 30s active
-let campaignTimer = null;
-let cycleTimer = null;
+// Next Month Countdown Logic
+const nextMonthCountdownText = ref('');
+let nextMonthTimer = null;
+
+const updateNextMonthCountdown = () => {
+  const now = new Date();
+  const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const diffMs = nextMonth - now;
+  
+  if (diffMs <= 0) {
+    nextMonthCountdownText.value = 'Yeni hakkınız hazır!';
+    hasPlayedInThisCycle.value = false;
+    return;
+  }
+  
+  const diffSecs = Math.floor(diffMs / 1000);
+  const secs = diffSecs % 60;
+  const diffMins = Math.floor(diffSecs / 60);
+  const mins = diffMins % 60;
+  const diffHours = Math.floor(diffMins / 60);
+  const hours = diffHours % 24;
+  const days = Math.floor(diffHours / 24);
+  
+  let text = '';
+  if (days > 0) text += `${days} gün `;
+  if (hours > 0) text += `${hours} saat `;
+  if (mins > 0) text += `${mins} dk `;
+  text += `${secs} sn`;
+  
+  nextMonthCountdownText.value = text;
+};
 
 const startCampaignTimers = () => {
-  const runCycle = () => {
-    // 1. Start Campaign
-    isCampaignActive.value = true;
-    activeTimeLeft.value = 30;
-    hasPlayedInThisCycle.value = localStorage.getItem('wheel_last_played_date') === getTodayDateString();
-
-    // Tick countdown down
-    campaignTimer = setInterval(() => {
-      activeTimeLeft.value--;
-      if (activeTimeLeft.value <= 0) {
-        clearInterval(campaignTimer);
-        isCampaignActive.value = false;
-        closeModal();
-      }
-    }, 1000);
-  };
-
-  // Run immediately on mount
-  runCycle();
-
-  // Run every 90 seconds (60 seconds inactive + 30 seconds active)
-  cycleTimer = setInterval(runCycle, 90000);
+  isCampaignActive.value = true;
+  updateNextMonthCountdown();
+  nextMonthTimer = setInterval(updateNextMonthCountdown, 1000);
 };
 
 // Canvas drawing functions
@@ -285,15 +321,9 @@ const openModal = () => {
 
 const closeModal = () => {
   if (!isSpinning.value) {
-    if (hasWon.value && !authStore.isAdmin) {
-      addToast('Kuponu kopyalamadan çarktan çıkamazsınız!', 'warning');
-      return;
-    }
     isModalOpen.value = false;
-    if (authStore.isAdmin) {
-      hasWon.value = false;
-      winningPrize.value = null;
-    }
+    hasWon.value = false;
+    winningPrize.value = null;
   }
 };
 
@@ -340,10 +370,23 @@ const spinWheel = () => {
       isSpinning.value = false;
       hasWon.value = true;
       hasPlayedInThisCycle.value = true;
-      localStorage.setItem('wheel_last_played_date', getTodayDateString());
+      localStorage.setItem('wheel_last_played_month', getTodayMonthString());
+      updateNextMonthCountdown();
       
-      // Save won coupon code to sessionStorage so cart.vue can display recommendation
-      sessionStorage.setItem('last_won_coupon', segments.value[winnerIndex].code);
+      // Save won coupon code to sessionStorage
+      const wonCode = segments.value[winnerIndex].code.toUpperCase();
+      sessionStorage.setItem('last_won_coupon', wonCode);
+      
+      // Unlock coupon for use in cart
+      try {
+        const unlocked = JSON.parse(localStorage.getItem('unlocked_coupons') || '[]');
+        if (!unlocked.includes(wonCode)) {
+          unlocked.push(wonCode);
+          localStorage.setItem('unlocked_coupons', JSON.stringify(unlocked));
+        }
+      } catch (e) {
+        console.error('Kupon kilidi açma hatası:', e);
+      }
       
       addToast(`Tebrikler! ${segments.value[winnerIndex].label} Kuponu Kazandınız.`);
       window.dispatchEvent(new CustomEvent('wheel-status-updated'));
@@ -384,8 +427,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  clearInterval(campaignTimer);
-  clearInterval(cycleTimer);
+  if (nextMonthTimer) clearInterval(nextMonthTimer);
   if (animationFrameId) {
     cancelAnimationFrame(animationFrameId);
   }

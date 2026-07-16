@@ -1,15 +1,17 @@
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { getDiscountedPrice as calculateDiscountedPrice, hasDiscount as hasProductDiscount, getDiscountLabel as getProductDiscountLabel } from '../utils/discount'
+import { useProductStore } from './productStore'
+import { useAuthStore } from './authStore'
 
 export const useCartStore = defineStore('cart', () => {
-  const cartItems = ref(JSON.parse(sessionStorage.getItem('cartItems')) || [])
+  const rawCartItems = ref(JSON.parse(sessionStorage.getItem('cartItems')) || [])
 
   const activeDiscountCode = ref(sessionStorage.getItem('activeDiscountCode') || null)
   const activeDiscountPercentage = ref(Number(sessionStorage.getItem('activeDiscountPercentage')) || 0)
   const activeDiscountAmount = ref(Number(sessionStorage.getItem('activeDiscountAmount')) || 0)
 
-  watch(cartItems, (items) => {
+  watch(rawCartItems, (items) => {
     sessionStorage.setItem('cartItems', JSON.stringify(items))
   }, { deep: true })
 
@@ -38,15 +40,37 @@ export const useCartStore = defineStore('cart', () => {
     return label ? `Sepette ${label.toLowerCase()}` : null
   }
 
+  const cartItems = computed(() => {
+    const productStore = useProductStore()
+    return rawCartItems.value.map(item => {
+      const product = productStore.products.find(p => String(p.id) === String(item.id))
+      if (product) {
+        const isAct = hasDiscount(product)
+        const dPrice = isAct ? getDiscountedPrice(product) : null
+        return {
+          ...item,
+          price: product.price,
+          discountedPrice: isAct ? dPrice.toFixed(2) : null,
+          originalPrice: isAct ? product.price : null,
+          promo: isAct ? discountLabel(product) : null,
+          stock: product.stock,
+          title: product.title,
+          thumbnail: product.thumbnail
+        }
+      }
+      return item
+    })
+  })
+
   // Sepete ürün ekle
   const addToCart = (product, quantityToAdd = 1) => {
-    const existingItem = cartItems.value.find(item => item.id === product.id)
+    const existingItem = rawCartItems.value.find(item => String(item.id) === String(product.id))
     
     if (existingItem) {
       const maxStock = existingItem.stock || product.stock || Infinity
       existingItem.quantity = Math.min(existingItem.quantity + quantityToAdd, maxStock)
     } else {
-      cartItems.value.push({
+      rawCartItems.value.push({
         id: product.id,
         title: product.title,
         price: product.price,
@@ -68,12 +92,12 @@ export const useCartStore = defineStore('cart', () => {
 
   // Sepetten ürün sil
   const removeFromCart = (id) => {
-    cartItems.value = cartItems.value.filter(item => item.id !== id)
+    rawCartItems.value = rawCartItems.value.filter(item => String(item.id) !== String(id))
   }
 
   // Ürün miktarını güncelle
   const updateQuantity = (id, quantity) => {
-    const item = cartItems.value.find(item => item.id === id)
+    const item = rawCartItems.value.find(item => String(item.id) === String(id))
     if (item && quantity > 0) {
       item.quantity = Math.min(quantity, item.stock || Infinity)
     }
@@ -81,7 +105,7 @@ export const useCartStore = defineStore('cart', () => {
 
   // Ürün seçimini toggle et
   const toggleSelected = (id) => {
-    const item = cartItems.value.find(item => item.id === id)
+    const item = rawCartItems.value.find(item => String(item.id) === String(id))
     if (item) {
       item.selected = !item.selected
     }
@@ -89,7 +113,7 @@ export const useCartStore = defineStore('cart', () => {
 
   // Satıcı seçimini toggle et
   const toggleSeller = (seller) => {
-    const sellerItems = cartItems.value.filter(item => item.seller === seller)
+    const sellerItems = rawCartItems.value.filter(item => item.seller === seller)
     const allSelected = sellerItems.every(item => item.selected)
     
     sellerItems.forEach(item => {
@@ -99,12 +123,23 @@ export const useCartStore = defineStore('cart', () => {
 
   // Sepeti temizle
   const clearCart = () => {
-    cartItems.value = []
+    if (activeDiscountCode.value) {
+      try {
+        const used = JSON.parse(localStorage.getItem('used_coupons') || '[]')
+        if (!used.includes(activeDiscountCode.value)) {
+          used.push(activeDiscountCode.value)
+          localStorage.setItem('used_coupons', JSON.stringify(used))
+        }
+      } catch (e) {
+        console.error('Kupon kullanım kaydı başarısız:', e)
+      }
+    }
+    rawCartItems.value = []
     removeDiscount()
   }
 
   const clearSelectedItems = () => {
-    cartItems.value = cartItems.value.filter(item => !item.selected)
+    rawCartItems.value = rawCartItems.value.filter(item => !item.selected)
   }
 
   // Satıcıya göre gruplandırılmış ürünler
@@ -186,6 +221,29 @@ export const useCartStore = defineStore('cart', () => {
     if (!code) return { success: false, message: 'Lütfen bir kupon kodu girin.' }
     
     const formattedCode = code.trim().toUpperCase()
+
+    // Check if coupon is already used
+    try {
+      const used = JSON.parse(localStorage.getItem('used_coupons') || '[]')
+      if (used.includes(formattedCode)) {
+        return { success: false, message: 'Bu kupon kodu daha önce kullanılmıştır.' }
+      }
+    } catch (e) {
+      console.error('Kullanılmış kupon kontrolü başarısız:', e)
+    }
+
+    // Check if coupon is unlocked (except for admin)
+    const authStore = useAuthStore()
+    if (!authStore.isAdmin) {
+      try {
+        const unlocked = JSON.parse(localStorage.getItem('unlocked_coupons') || '[]')
+        if (!unlocked.includes(formattedCode)) {
+          return { success: false, message: 'Bu kuponu uygulayabilmek için önce şans çarkından kazanmalısınız.' }
+        }
+      } catch (e) {
+        console.error('Kilitli kupon kontrolü başarısız:', e)
+      }
+    }
     
     // Read dynamic coupons from localStorage
     const coupons = {}

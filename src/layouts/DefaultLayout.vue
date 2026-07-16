@@ -71,12 +71,12 @@
             Merhaba, {{ firstName }}
           </span>
           
-          <router-link v-if="authStore.isAuthenticated" to="/favorilerim" class="relative w-9 h-9 rounded-lg border border-[#EAE8E0]/40 hover:border-[#EAE8E0] hover:bg-stone-200/25 active:scale-95 flex items-center justify-center text-[#1E3A32] transition-all" aria-label="Favorilerim">
+          <router-link v-if="authStore.isAuthenticated && !authStore.isAdmin" to="/favorilerim" class="relative w-9 h-9 rounded-lg border border-[#EAE8E0]/40 hover:border-[#EAE8E0] hover:bg-stone-200/25 active:scale-95 flex items-center justify-center text-[#1E3A32] transition-all" aria-label="Favorilerim">
             <svg class="w-4.5 h-4.5 stroke-[1.8]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20.8 4.6a5.4 5.4 0 0 0-7.6 0L12 5.8l-1.2-1.2a5.4 5.4 0 0 0-7.6 7.6l1.2 1.2L12 21l7.6-7.6 1.2-1.2a5.4 5.4 0 0 0 0-7.6Z"/></svg>
             <span v-if="favoriteStore.totalFavorites" class="absolute -top-1 -right-1 min-w-4 h-4 px-1 bg-[#C97A62] text-white text-[9px] font-bold rounded-full flex items-center justify-center shadow-sm">{{ favoriteStore.totalFavorites }}</span>
           </router-link>
 
-          <router-link v-if="authStore.isAuthenticated" to="/cart" class="relative w-9 h-9 rounded-lg border border-[#EAE8E0]/40 hover:border-[#EAE8E0] hover:bg-stone-200/25 active:scale-95 flex items-center justify-center text-[#1E3A32] transition-all" aria-label="Sepetim">
+          <router-link v-if="authStore.isAuthenticated && !authStore.isAdmin" to="/cart" class="relative w-9 h-9 rounded-lg border border-[#EAE8E0]/40 hover:border-[#EAE8E0] hover:bg-stone-200/25 active:scale-95 flex items-center justify-center text-[#1E3A32] transition-all" aria-label="Sepetim">
             <svg class="w-4.5 h-4.5 stroke-[1.8]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 3h2l2.2 11.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.6L20 7H6"/><circle cx="10" cy="20" r="1"/><circle cx="18" cy="20" r="1"/></svg>
             <span v-if="cartStore.totalItems" class="absolute -top-1 -right-1 min-w-4 h-4 px-1 bg-[#C97A62] text-white text-[9px] font-bold rounded-full flex items-center justify-center shadow-sm">{{ cartStore.totalItems }}</span>
           </router-link>
@@ -266,7 +266,14 @@ const deptSubcategories = computed(() => {
 const categoryName = translateCategory;
 
 const handleCategoryClick = (cat) => {
-  router.push({ path: '/', query: { kategori: cat } })
+  router.push({ path: '/', query: { kategori: cat } }).then(() => {
+    setTimeout(() => {
+      const el = document.getElementById('urunler')
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' })
+      }
+    }, 100)
+  })
 }
 
 const handleLogout = () => {

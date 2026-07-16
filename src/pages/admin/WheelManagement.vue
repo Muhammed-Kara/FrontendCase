@@ -145,19 +145,26 @@ const newWheelCoupon = reactive({
   label: ''
 });
 
+const defaultSegments = [
+  { code: 'SAVE10', type: 'percentage', value: 10, label: '%10 İndirim', color: '#1E3A32' },
+  { code: 'SAVE25', type: 'amount', value: 25, label: '25 TL İndirim', color: '#C97A62' },
+  { code: 'SAVE15', type: 'percentage', value: 15, label: '%15 İndirim', color: '#2D5A4E' },
+  { code: 'SAVE50', type: 'amount', value: 50, label: '50 TL İndirim', color: '#E2E6DF' },
+  { code: 'SAVE20', type: 'percentage', value: 20, label: '%20 İndirim', color: '#1E3A32' },
+  { code: 'SAVE100', type: 'amount', value: 100, label: '100 TL İndirim', color: '#C97A62' }
+];
+
 const loadWheelSegments = () => {
   try {
-    // Clear default/old data once and start empty if they had defaults
-    if (!localStorage.getItem('wheel_defaults_purged_v2')) {
-      localStorage.removeItem(WHEEL_STORAGE_KEY);
-      localStorage.setItem('wheel_defaults_purged_v2', 'true');
-    }
-
     const stored = localStorage.getItem(WHEEL_STORAGE_KEY);
-    // Varsayılan kupon olmayacağı için boş dizi ile başlatıyoruz
-    wheelSegments.value = stored ? JSON.parse(stored) : [];
+    if (stored && JSON.parse(stored).length >= 2) {
+      wheelSegments.value = JSON.parse(stored);
+    } else {
+      wheelSegments.value = [...defaultSegments];
+      localStorage.setItem(WHEEL_STORAGE_KEY, JSON.stringify(defaultSegments));
+    }
   } catch (e) {
-    wheelSegments.value = [];
+    wheelSegments.value = [...defaultSegments];
   }
 };
 

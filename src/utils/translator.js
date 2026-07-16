@@ -32,3 +32,56 @@ export const translateCategory = (value) => {
   const key = String(value).toLowerCase().trim();
   return categoryTranslations[key] || value.replaceAll('-', ' ').replace(/\b\w/g, c => c.toLocaleUpperCase('tr-TR'));
 };
+
+export const translateComment = (value) => {
+  if (!value) return '';
+  const key = String(value).toLowerCase().trim().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
+  const dict = {
+    'very unhappy with the purchase': 'Satın aldığım için hiç memnun değilim!',
+    'very satisfied': 'Çok memnun kaldım!',
+    'great product': 'Harika bir ürün!',
+    'excellent value for money': 'Fiyat/performans açısından mükemmel.',
+    'highly recommended': 'Kesinlikle tavsiye ederim!',
+    'good quality': 'İyi kalitede bir ürün.',
+    'fast shipping': 'Hızlı kargo.',
+    'waste of money': 'Paranızı boşa harcamayın.',
+    'satisfied customer': 'Memnun bir müşteri.',
+    'would buy again': 'Tekrar satın alırım.',
+    'not as described': 'Görseldeki/açıklamadaki gibi değil.',
+    'average quality': 'Ortalama kalitede.',
+    'excellent': 'Mükemmel!',
+    'awesome product': 'Harika bir ürün.',
+    'very fast delivery': 'Çok hızlı teslimat.',
+    'product is okay': 'Ürün idare eder.',
+    'not worth the price': 'Bu fiyata değmez.',
+    'superb': 'Harika!',
+    'perfect fit': 'Tam uydu.',
+    'beautiful': 'Çok güzel.',
+    'worst purchase ever': 'Şimdiye kadarki en kötü alışverişim.',
+    'poor quality': 'Düşük kalite.',
+    'very disappointed': 'Büyük hayal kırıklığı.',
+    'fast delivery': 'Hızlı teslimat.',
+    'great value': 'Harika fiyat.',
+    'love it': 'Çok beğendim!',
+    'highly disappointed': 'Çok büyük hayal kırıklığı!',
+    'very pleased': 'Çok memnunum.',
+    'happy with the purchase': 'Alışverişten memnun kaldım.',
+    'disappointed with the quality': 'Kalitesinden dolayı hayal kırıklığına uğradım.',
+    'great experience': 'Harika bir deneyim.',
+    'not satisfied': 'Memnun kalmadım.',
+    'good value': 'İyi fiyat.',
+    'very good': 'Çok iyi.',
+    'will buy again': 'Tekrar alacağım.',
+    'terrible product': 'Berbat bir ürün.',
+    'doesnt work': 'Çalışmıyor / işe yaramıyor.',
+    'okay product': 'Fena değil.'
+  };
+
+  for (const k in dict) {
+    if (key.includes(k)) {
+      return dict[k];
+    }
+  }
+
+  return value;
+};

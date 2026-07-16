@@ -13,12 +13,6 @@
         <p class="text-sm md:text-base text-stone-600 font-light leading-relaxed max-w-md">
           Gündelik hayatı güzelleştiren, işlevi ve tasarımı dengeli ürünlerden oluşan sakin bir seçki.
         </p>
-        <div class="pt-2">
-          <a href="#urunler" class="inline-flex items-center gap-5 px-5 py-3 bg-[#1E3A32] text-[#FAF9F6] text-[11px] font-bold tracking-wider uppercase rounded-lg hover:bg-[#2D5A4E] shadow-md hover:shadow-lg transition-all duration-300 group">
-            Seçkiyi keşfet 
-            <span class="text-sm transform group-hover:translate-y-0.5 transition-transform duration-300">↓</span>
-          </a>
-        </div>
       </div>
       
       <!-- Asymmetric Hero Art (Aesthetic Dotted Grid & Empty Floating Boxes) -->
@@ -104,9 +98,16 @@
       <!-- Product Grid & Pagination -->
       <div v-else class="space-y-12">
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
-          <article v-for="product in paginatedProducts" :key="product.id" class="group relative flex flex-col cursor-pointer bg-[#FAF9F6]/40 rounded-xl p-3 border border-transparent hover:border-[#EAE8E0] hover:bg-white hover:shadow-xl transition-all duration-500" @click="goToDetail(product.id)">
-            <!-- Product Image Container with Sliding Hover Image Transition -->
-            <div class="relative aspect-[4/5] rounded-lg overflow-hidden bg-[#FAF9F6] border border-[#EAE8E0]/30 flex items-center justify-center p-4 transition-colors duration-300 group-hover:bg-[#F2F1EC]">
+          <article v-for="product in paginatedProducts" :key="product.id" class="group relative flex flex-col cursor-pointer bg-white/60 rounded-2xl p-3.5 border border-[#EAE8E0]/60 hover:bg-white hover:border-[#1E3A32]/20 hover:shadow-[0_12px_40px_rgba(30,58,50,0.04)] transition-all duration-500" @click="goToDetail(product.id)">
+            <!-- Product Image Container -->
+            <div class="relative aspect-[4/5] rounded-xl overflow-hidden bg-[#FAF9F6]/60 flex items-center justify-center p-6 transition-all duration-500 group-hover:bg-[#FAF9F6]">
+              
+              <!-- Out of Stock Overlay -->
+              <div v-if="Number(product.stock || 0) <= 0" class="absolute inset-0 bg-[#1E3A32]/45 backdrop-blur-[2px] z-20 flex items-center justify-center pointer-events-none">
+                <span class="text-[#FAF9F6] text-[10px] font-bold uppercase tracking-widest border border-[#FAF9F6]/30 px-3 py-1.5 rounded-lg bg-[#1E3A32]/85 shadow-md">
+                  Stokta Yok
+                </span>
+              </div>
               
               <!-- Editor's Pick Badge -->
               <span v-if="product.rating >= 4.7" class="absolute top-3 left-3 z-10 text-[9px] uppercase tracking-widest font-bold text-[#1E3A32] bg-[#E2E6DF]/90 backdrop-blur px-2.5 py-1 rounded-lg shadow-sm border border-[#1E3A32]/10">
@@ -120,29 +121,18 @@
 
               <!-- Favorite Button -->
               <button class="absolute top-3 right-3 z-10 w-8.5 h-8.5 rounded-full bg-white/90 backdrop-blur border border-[#EAE8E0] flex items-center justify-center text-stone-700 hover:text-[#C97A62] hover:scale-110 active:scale-95 transition-all duration-300 shadow-sm" :class="{'text-[#C97A62] bg-[#FAF9F6]': favoriteStore.isFavorite(product.id)}" :aria-label="favoriteStore.isFavorite(product.id) ? 'Favorilerden çıkar' : 'Favorilere ekle'" @click.stop="toggleFavorite(product)">
-                <svg class="w-4 h-4" viewBox="0 0 24 24" :fill="favoriteStore.isFavorite(product.id) ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="1.8">
+                <svg class="w-4.5 h-4.5" viewBox="0 0 24 24" :fill="favoriteStore.isFavorite(product.id) ? 'currentColor' : 'none'" stroke="currentColor" stroke-width="1.8">
                   <path d="M20.8 4.6a5.4 5.4 0 0 0-7.6 0L12 5.8l-1.2-1.2a5.4 5.4 0 0 0-7.6 7.6L12 21l8.8-8.8a5.4 5.4 0 0 0 0-7.6Z"/>
                 </svg>
               </button>
 
-              <!-- Sliding Images Container (Slower Transitions) -->
+              <!-- Image Container (Simplified Hover Zoom) -->
               <div class="relative w-full h-full overflow-hidden flex items-center justify-center pointer-events-none">
-                <!-- Primary Image -->
                 <img 
                   :src="product.thumbnail" 
                   :alt="product.title" 
                   loading="lazy" 
-                  class="w-full h-full object-contain mix-blend-multiply transition-transform duration-800 ease-in-out"
-                  :class="getSecondaryImage(product) ? 'group-hover:-translate-x-full' : 'group-hover:scale-105'"
-                >
-                
-                <!-- Secondary Image (slides in from right on hover) -->
-                <img 
-                  v-if="getSecondaryImage(product)"
-                  :src="getSecondaryImage(product)" 
-                  :alt="product.title" 
-                  loading="lazy" 
-                  class="absolute w-full h-full object-contain mix-blend-multiply transition-transform duration-800 ease-in-out translate-x-full group-hover:translate-x-0"
+                  class="w-full h-full object-contain mix-blend-multiply transition-transform duration-700 ease-in-out group-hover:scale-[1.04]"
                 >
               </div>
             </div>
@@ -174,7 +164,10 @@
                     {{ money(product.price) }}
                   </span>
                 </div>
-                <span v-if="product.stock < 15" class="text-[9px] text-[#C97A62] bg-[#C97A62]/10 px-2 py-0.5 rounded-md font-bold tracking-wider uppercase animate-pulse">
+                <span v-if="Number(product.stock || 0) <= 0" class="text-[9px] text-red-500 bg-red-500/10 px-2.5 py-0.5 rounded-md font-bold tracking-wider uppercase">
+                  Stokta Yok
+                </span>
+                <span v-else-if="Number(product.stock || 0) < 15" class="text-[9px] text-[#C97A62] bg-[#C97A62]/10 px-2.5 py-0.5 rounded-md font-bold tracking-wider uppercase animate-pulse">
                   Son {{ product.stock }} ürün
                 </span>
               </div>
@@ -245,18 +238,47 @@ const { addToast } = useToast()
 const hasDiscount = (item) => checkDiscount(item)
 const discountLabel = (item) => getDiscountLabel(item)
 
-const searchQuery = ref('')
-const selectedCategory = ref(route.query.kategori || '')
-const sortBy = ref('featured')
+const searchQuery = ref(productStore.shopSearchQuery)
+const selectedCategory = ref(route.query.kategori || productStore.shopSelectedCategory)
+const sortBy = ref(productStore.shopSortBy)
 const addedId = ref(null)
 
 watch(() => route.query.kategori, (newCat) => {
   selectedCategory.value = newCat || ''
+  productStore.shopSelectedCategory = selectedCategory.value
+})
+
+watch(searchQuery, (newVal) => {
+  if (productStore.shopSearchQuery !== newVal) {
+    productStore.shopSearchQuery = newVal
+    currentPage.value = 1
+    productStore.shopCurrentPage = 1
+  }
+})
+
+watch(selectedCategory, (newVal) => {
+  if (productStore.shopSelectedCategory !== newVal) {
+    productStore.shopSelectedCategory = newVal
+    currentPage.value = 1
+    productStore.shopCurrentPage = 1
+  }
+})
+
+watch(sortBy, (newVal) => {
+  if (productStore.shopSortBy !== newVal) {
+    productStore.shopSortBy = newVal
+    currentPage.value = 1
+    productStore.shopCurrentPage = 1
+  }
 })
 
 // Pagination state
-const currentPage = ref(1)
-const itemsPerPage = 10
+const currentPage = ref(productStore.shopCurrentPage)
+const itemsPerPage = 12
+
+watch(currentPage, (newVal) => {
+  productStore.shopCurrentPage = newVal
+})
 
 const categories = computed(() => {
   const productCats = productStore.products.map(p => p.category)
@@ -345,14 +367,21 @@ const requireLogin = message => {
   return false
 }
 const toggleFavorite = product => {
+  if (authStore.isAdmin) {
+    addToast('Admin sayfasında favorilere ürün eklenemez.', 'warning')
+    return
+  }
   if (!requireLogin('Favorilere eklemek için lütfen giriş yapın.')) return
   favoriteStore.toggleFavorite(product)
 }
 const addToCart = product => {
+  if (authStore.isAdmin) {
+    addToast('Admin sayfasında sepete ürün eklenemez.', 'warning')
+    return
+  }
   if (!requireLogin('Satın almak için lütfen giriş yapın.')) return
   cartStore.addToCart(product)
-  addedId.value=product.id
-  setTimeout(()=>addedId.value=null,1400)
+  router.push('/cart')
 }
 onMounted(()=>productStore.loadProducts())
 </script>

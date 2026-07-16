@@ -84,6 +84,9 @@ router.beforeEach(async (to, from) => {
   if (to.meta.requiresAdmin && !isAdmin) {           
     return '/'; 
   }
+  if ((to.path === '/cart' || to.path === '/favorilerim') && isAdmin) {
+    return '/admin';
+  }
   if (to.path === '/login' && isAuthenticated) {
     return '/';
   }

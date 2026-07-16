@@ -13,44 +13,6 @@
         </button>
       </div>
 
-      <!-- KATEGORİ YÖNETİMİ -->
-      <div class="bg-white border border-[#EAE8E0] rounded-xl p-6 shadow-xs">
-        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
-          <div class="text-left">
-            <h2 class="font-serif text-lg font-semibold text-[#1E3A32]">Kategoriler</h2>
-            <p class="text-xs text-stone-500 mt-1">Ürünlere atanacak kategorileri buradan oluşturun.</p>
-          </div>
-
-          <form class="flex gap-2 w-full lg:w-auto flex-wrap sm:flex-nowrap" @submit.prevent="addCategory">
-            <input
-              v-model="newCategoryName"
-              type="text"
-              placeholder="Yeni kategori adı..."
-              class="w-full sm:w-64 px-4 py-2.5 bg-[#FAF9F6] border border-[#EAE8E0] rounded-lg outline-none focus:ring-2 focus:ring-[#1E3A32]/10 focus:border-[#1E3A32] text-xs text-[#1E3A32] transition-all"
-            >
-            <button type="submit" class="px-5 py-2.5 bg-white border border-[#EAE8E0] hover:bg-stone-50 rounded-lg text-xs font-bold text-stone-700 active:scale-95 transition-all cursor-pointer flex-shrink-0">
-              Kategori Ekle
-            </button>
-          </form>
-        </div>
-
-        <!-- Category Chips -->
-        <div v-if="categories.length" class="flex flex-wrap gap-2 mt-6 pt-4 border-t border-[#EAE8E0]/40">
-          <span v-for="cat in categories" :key="cat" class="inline-flex items-center gap-2 bg-[#FAF9F6] border border-[#EAE8E0] text-stone-600 px-3.5 py-1.5 rounded-lg text-xs font-semibold">
-            {{ categoryName(cat) }}
-            <button
-              type="button"
-              class="text-stone-400 hover:text-stone-700 font-bold text-sm leading-none transition-colors cursor-pointer"
-              @click="deleteCategory(cat)"
-              :title="`'${categoryName(cat)}' kategorisini sil`"
-            >×</button>
-          </span>
-        </div>
-        <p class="text-xs text-stone-400 mt-6 pt-4 border-t border-[#EAE8E0]/40 text-left italic">
-          Henüz kategori eklenmedi. Yukarıdan bir kategori oluşturun.
-        </p>
-      </div>
-
       <!-- PRODUCT TABLE CARD -->
       <div class="bg-white border border-[#EAE8E0] rounded-xl overflow-hidden shadow-xs">
         <div class="overflow-x-auto">
@@ -161,7 +123,7 @@
               <div class="relative">
                 <select v-model="formData.category" required class="w-full px-3 py-2.5 bg-[#FAF9F6] border border-[#EAE8E0] rounded-lg outline-none focus:ring-2 focus:ring-[#1E3A32]/10 focus:border-[#1E3A32] text-xs text-stone-600 appearance-none cursor-pointer transition-all">
                   <option value="" disabled>Kategori seçin</option>
-                  <option v-for="cat in categories" :key="cat" :value="cat">{{ categoryName(cat) }}</option>
+                  <option v-for="cat in selectCategories" :key="cat" :value="cat">{{ categoryName(cat) }}</option>
                 </select>
                 <!-- Custom chevron -->
                 <div class="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-stone-400">
@@ -171,13 +133,13 @@
                 </div>
               </div>
               <p v-if="!categories.length" class="text-[9px] text-[#C97A62] mt-1 font-semibold">
-                * Önce yukarıdaki "Kategoriler" alanından bir kategori oluşturun.
+                * Sistemde tanımlı kategori bulunmamaktadır.
               </p>
             </div>
 
             <div class="text-left">
               <label class="block text-[9px] font-extrabold tracking-widest text-[#1E3A32] uppercase mb-1">Fiyat (TL)</label>
-              <input v-model.number="formData.price" type="number" step="0.01" required class="w-full px-3 py-2.5 bg-[#FAF9F6] border border-[#EAE8E0] rounded-lg outline-none focus:ring-2 focus:ring-[#1E3A32]/10 focus:border-[#1E3A32] text-xs text-[#1E3A32] transition-all">
+              <input v-model.number="formData.price" type="number" step="0.01" min="0.01" required class="w-full px-3 py-2.5 bg-[#FAF9F6] border border-[#EAE8E0] rounded-lg outline-none focus:ring-2 focus:ring-[#1E3A32]/10 focus:border-[#1E3A32] text-xs text-[#1E3A32] transition-all">
             </div>
 
             <div class="text-left space-y-1.5">
@@ -224,6 +186,53 @@
         </div>
       </div>
 
+      <!-- Custom Delete Confirmation Modal -->
+      <div 
+        v-if="isDeleteModalOpen" 
+        class="fixed inset-0 z-50 flex items-center justify-center p-4"
+        role="dialog"
+        aria-modal="true"
+      >
+        <!-- Backdrop -->
+        <div class="absolute inset-0 bg-[#1E3A32]/25 backdrop-blur-xs animate-fade-in" @click="closeDeleteModal"></div>
+
+        <!-- Modal Card -->
+        <div class="relative bg-[#FAF9F6] border border-[#EAE8E0] w-full max-w-sm rounded-2xl shadow-2xl p-6 text-center space-y-5 animate-scale-up z-10">
+          <!-- Icon -->
+          <div class="w-14 h-14 bg-[#C97A62]/10 text-[#C97A62] rounded-full flex items-center justify-center mx-auto mb-2">
+            <svg class="w-7 h-7 stroke-[1.8]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </div>
+
+          <!-- Content -->
+          <div class="space-y-1.5">
+            <h3 class="font-serif text-lg font-medium text-[#1E3A32] tracking-tight text-center">Ürünü Sil</h3>
+            <p class="text-xs text-stone-500 font-light leading-relaxed max-w-[240px] mx-auto text-center">
+              Bu ürünü silmek istediğinize emin misiniz? Bu işlem geri alınamaz.
+            </p>
+          </div>
+
+          <!-- Buttons -->
+          <div class="flex gap-3">
+            <button 
+              type="button"
+              @click="closeDeleteModal"
+              class="flex-1 py-2.5 bg-stone-200 hover:bg-stone-300 text-stone-700 text-xs font-bold uppercase tracking-wider rounded-xl transition-all cursor-pointer"
+            >
+              İptal
+            </button>
+            <button 
+              type="button"
+              @click="confirmDelete"
+              class="flex-1 py-2.5 bg-[#C97A62] hover:bg-[#b0634c] text-white text-xs font-bold uppercase tracking-wider rounded-xl shadow-md transition-all active:scale-[0.98] cursor-pointer"
+            >
+              Evet, Sil
+            </button>
+          </div>
+        </div>
+      </div>
+
     </div>
   </AdminLayout>
 </template>
@@ -238,6 +247,8 @@ const productStore = useProductStore();
 
 const isModalOpen = ref(false);
 const isEditing = ref(false);
+const isDeleteModalOpen = ref(false);
+const productIdToDelete = ref(null);
 
 // --- Admin Pagination State ---
 const currentPage = ref(1);
@@ -305,9 +316,16 @@ const newCategoryName = ref('');
 const loadCategories = () => {
   try {
     const stored = localStorage.getItem(CATEGORY_STORAGE_KEY);
-    categories.value = stored ? JSON.parse(stored) : [];
+    let list = stored ? JSON.parse(stored) : [];
+    if (list.length === 0 && productStore.products.length > 0) {
+      const productCats = productStore.products.map(p => p.category);
+      list = [...new Set(productCats)].filter(Boolean);
+      localStorage.setItem(CATEGORY_STORAGE_KEY, JSON.stringify(list));
+    }
+    categories.value = list;
   } catch (e) {
-    categories.value = [];
+    const productCats = productStore.products.map(p => p.category);
+    categories.value = [...new Set(productCats)].filter(Boolean);
   }
 };
 
@@ -353,6 +371,14 @@ const handleImageUpload = (event) => {
 const emptyForm = () => ({ id: null, title: '', price: 0, thumbnail: '', description: '', category: '' });
 const formData = reactive(emptyForm());
 
+const selectCategories = computed(() => {
+  const list = [...categories.value];
+  if (formData.category && !list.includes(formData.category)) {
+    list.push(formData.category);
+  }
+  return [...new Set(list)].filter(Boolean);
+});
+
 onMounted(async () => {
   await productStore.loadProducts();
   loadCategories();
@@ -385,9 +411,20 @@ const handleSubmit = () => {
 };
 
 const handleDelete = (id) => {
-  if (confirm('Bu ürünü silmek istediğinize emin misiniz?')) {
-    productStore.deleteProduct(id);
+  productIdToDelete.value = id;
+  isDeleteModalOpen.value = true;
+};
+
+const confirmDelete = () => {
+  if (productIdToDelete.value) {
+    productStore.deleteProduct(productIdToDelete.value);
   }
+  closeDeleteModal();
+};
+
+const closeDeleteModal = () => {
+  isDeleteModalOpen.value = false;
+  productIdToDelete.value = null;
 };
 </script>
 

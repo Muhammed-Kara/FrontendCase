@@ -52,6 +52,13 @@
               <!-- Product Image -->
               <div class="relative aspect-[4/5] rounded-lg overflow-hidden bg-[#FAF9F6] border border-[#EAE8E0]/30 flex items-center justify-center p-4 transition-colors duration-300 group-hover:bg-[#F2F1EC]">
                 
+                <!-- Out of Stock Overlay -->
+                <div v-if="Number(product.stock || 0) <= 0" class="absolute inset-0 bg-[#1E3A32]/45 backdrop-blur-[2px] z-10 flex items-center justify-center pointer-events-none">
+                  <span class="text-[#FAF9F6] text-[10px] font-bold uppercase tracking-widest border border-[#FAF9F6]/30 px-3 py-1.5 rounded-lg bg-[#1E3A32]/85 shadow-md">
+                    Stokta Yok
+                  </span>
+                </div>
+                
                 <!-- Unfavorite Button -->
                 <button
                   class="absolute top-3 right-3 z-10 w-8.5 h-8.5 rounded-full bg-[#FAF9F6] border border-[#EAE8E0] flex items-center justify-center text-[#C97A62] hover:scale-110 active:scale-95 transition-all duration-300 shadow-sm"
@@ -82,11 +89,16 @@
 
                 <!-- Pricing -->
                 <div class="mt-4 pt-3 flex flex-col border-t border-[#EAE8E0]/40">
-                  <div class="flex items-baseline gap-2">
-                    <span class="font-serif text-base font-semibold text-[#1E3A32]">{{ discountedPrice(product).toFixed(2) }} TL</span>
-                    <span v-if="hasDiscount(product)" class="text-xs text-stone-400 line-through font-serif">{{ Number(product.price).toFixed(2) }} TL</span>
+                  <div class="flex justify-between items-center w-full">
+                    <div class="flex items-baseline gap-2">
+                      <span class="font-serif text-base font-semibold text-[#1E3A32]">{{ discountedPrice(product).toFixed(2) }} TL</span>
+                      <span v-if="hasDiscount(product)" class="text-xs text-stone-400 line-through font-serif">{{ Number(product.price).toFixed(2) }} TL</span>
+                    </div>
+                    <span v-if="Number(product.stock || 0) <= 0" class="text-[9px] text-red-500 bg-red-500/10 px-2.5 py-0.5 rounded-md font-bold tracking-wider uppercase">
+                      Stokta Yok
+                    </span>
                   </div>
-                  <span v-if="hasDiscount(product)" class="text-[9px] font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-lg self-start mt-1.5 uppercase tracking-wider">
+                  <span v-if="hasDiscount(product) && Number(product.stock || 0) > 0" class="text-[9px] font-bold text-green-700 bg-green-50 px-2 py-0.5 rounded-lg self-start mt-1.5 uppercase tracking-wider">
                     Sizin için indirimli
                   </span>
                 </div>

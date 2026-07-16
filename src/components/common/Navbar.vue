@@ -33,7 +33,7 @@
          <div class="flex items-center gap-1 sm:gap-3">
            <!-- Favoriler -->
            <router-link
-             v-if="authStore.isAuthenticated"
+             v-if="authStore.isAuthenticated && !authStore.isAdmin"
              to="/favorilerim"
              class="relative flex items-center justify-center w-10 h-10 rounded-lg text-gray-600 hover:text-orange-600 hover:bg-orange-50 transition-all"
              title="Favoriler"
@@ -48,7 +48,7 @@
 
            <!-- Sepet -->
            <router-link
-             v-if="authStore.isAuthenticated"
+             v-if="authStore.isAuthenticated && !authStore.isAdmin"
              to="/cart"
              class="relative flex items-center justify-center w-10 h-10 rounded-lg text-gray-600 hover:text-orange-600 hover:bg-orange-50 transition-all"
              title="Sepetim"

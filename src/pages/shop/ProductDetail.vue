@@ -38,12 +38,9 @@
             <!-- Left Media Frame & Guarantees -->
             <div class="p-4 md:p-6 bg-[#FAF9F6]/40 border-b lg:border-b-0 lg:border-r border-[#EAE8E0] flex flex-col space-y-4">
               
-              <!-- Main Image Frame with Dynamic Inner Zoom & Dots -->
+              <!-- Main Image Frame with Smooth Center Zoom & Dots -->
               <div 
-                class="relative aspect-square bg-white border border-[#EAE8E0]/40 rounded-lg overflow-hidden flex items-center justify-center p-12 md:p-20 shadow-inner cursor-zoom-in group/media"
-                @mousemove="handleMouseMove"
-                @mouseenter="isZoomActive = true"
-                @mouseleave="isZoomActive = false"
+                class="relative aspect-square bg-white border border-[#EAE8E0]/40 rounded-lg overflow-hidden flex items-center justify-center p-12 md:p-20 shadow-inner group/media"
               >
                 <span v-if="hasDiscount(product)" class="absolute top-4 left-4 z-10 text-[9px] uppercase tracking-widest font-bold text-[#FAF9F6] bg-[#C97A62] px-2.5 py-1 rounded-lg shadow-sm">
                   {{ discountLabel(product) }}
@@ -52,11 +49,7 @@
                 <img 
                   :src="activeImage" 
                   :alt="product.title" 
-                  class="max-h-[85%] max-w-[85%] object-contain mix-blend-multiply transition-transform duration-300 ease-out"
-                  :style="isZoomActive ? {
-                    transform: 'scale(2.2)',
-                    transformOrigin: `${zoomX}% ${zoomY}%`
-                  } : {}"
+                  class="max-h-[85%] max-w-[85%] object-contain mix-blend-multiply transition-transform duration-500 ease-in-out group-hover/media:scale-[1.06]"
                 >
 
                 <!-- Image Indicator Dots (Kaçıncı resimde olduğunu gösteren noktalar) -->
@@ -168,9 +161,13 @@
                   <span v-if="hasDiscount(product)" class="text-base text-stone-400 line-through font-serif">{{ Number(product.price).toFixed(2) }} TL</span>
                 </div>
                 
-                <div v-if="hasDiscount(product)" class="flex gap-2 items-center">
+                <div v-if="hasDiscount(product)" class="flex gap-2 items-center flex-wrap">
                   <span class="text-[9px] font-bold text-green-700 bg-green-50 px-2.5 py-1 rounded-lg border border-green-700/10 uppercase tracking-wider">
-                    {{ discountLabel(product) }} indirim
+                    {{ discountLabel(product) }}
+                  </span>
+                  <span v-if="countdownText" class="text-[10px] font-bold text-[#C97A62] bg-[#C97A62]/10 px-2.5 py-1 rounded-lg border border-[#C97A62]/10 tracking-wide flex items-center gap-1 animate-pulse">
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                    {{ countdownText }}
                   </span>
                 </div>
 
@@ -183,7 +180,8 @@
                       <span v-else-if="product.stock > 0">Sınırlı Stok!</span>
                       <span v-else>Tükendi</span>
                     </span>
-                    <span>Son {{ product.stock }} adet</span>
+                    <span v-if="product.stock > 0">Son {{ product.stock }} adet</span>
+                    <span v-else class="text-red-500 font-bold uppercase tracking-wider text-[10px]">Stokta Yok</span>
                   </div>
                   <!-- Progress Bar -->
                   <div class="h-1 bg-stone-100 rounded-full overflow-hidden">
@@ -237,15 +235,15 @@
                     <button 
                       @click="quantitySelected = Math.max(1, quantitySelected - 1)"
                       class="w-9 h-9 flex items-center justify-center text-sm font-semibold text-stone-600 hover:bg-stone-50 active:scale-90 transition-all cursor-pointer"
-                      :disabled="quantitySelected <= 1"
+                      :disabled="quantitySelected <= 1 || product.stock <= 0"
                     >
                       -
                     </button>
-                    <span class="px-4 text-xs font-bold text-stone-700 min-w-8 text-center">{{ quantitySelected }}</span>
+                    <span class="px-4 text-xs font-bold text-stone-700 min-w-8 text-center">{{ product.stock <= 0 ? 0 : quantitySelected }}</span>
                     <button 
                       @click="quantitySelected = Math.min(product.stock, quantitySelected + 1)"
                       class="w-9 h-9 flex items-center justify-center text-sm font-semibold text-stone-600 hover:bg-stone-50 active:scale-90 transition-all cursor-pointer"
-                      :disabled="quantitySelected >= product.stock"
+                      :disabled="product.stock <= 0 || quantitySelected >= product.stock"
                     >
                       +
                     </button>
@@ -253,11 +251,27 @@
                 </div>
 
                 <div class="flex gap-3">
-                  <button class="flex-grow flex items-center justify-center gap-2.5 h-11 bg-[#1E3A32] hover:bg-[#2D5A4E] text-[#FAF9F6] text-xs font-bold uppercase tracking-wider rounded-lg shadow-md active:scale-[0.98] transition-all cursor-pointer" @click="addToCart">
+                  <button 
+                    v-if="product.stock > 0"
+                    class="flex-grow flex items-center justify-center gap-2.5 h-11 bg-[#1E3A32] hover:bg-[#2D5A4E] text-[#FAF9F6] text-xs font-bold uppercase tracking-wider rounded-lg shadow-md active:scale-[0.98] transition-all cursor-pointer" 
+                    @click="addToCart"
+                  >
                     <svg class="w-4 h-4 stroke-[1.8]" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" /></svg>
                     Sepete Ekle
                   </button>
-                  <button class="w-28 flex items-center justify-center h-11 bg-white hover:bg-stone-50 text-[#1E3A32] border border-[#1E3A32] text-xs font-bold uppercase tracking-wider rounded-lg active:scale-[0.98] transition-all cursor-pointer" @click="buyNow">
+                  <button 
+                    v-else
+                    disabled
+                    class="flex-grow flex items-center justify-center gap-2.5 h-11 bg-stone-300 text-stone-500 text-xs font-bold uppercase tracking-wider rounded-lg cursor-not-allowed opacity-75"
+                  >
+                    Stokta Yok
+                  </button>
+                  
+                  <button 
+                    v-if="product.stock > 0"
+                    class="w-28 flex items-center justify-center h-11 bg-white hover:bg-stone-50 text-[#1E3A32] border border-[#1E3A32] text-xs font-bold uppercase tracking-wider rounded-lg active:scale-[0.98] transition-all cursor-pointer" 
+                    @click="buyNow"
+                  >
                     Hemen Al
                   </button>
                 </div>
@@ -381,7 +395,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import DefaultLayout from '../../layouts/DefaultLayout.vue'
 import { useCartStore } from '../../stores/cartStore'
@@ -389,7 +403,7 @@ import { useProductStore } from '../../stores/productStore'
 import { useFavoriteStore } from '../../stores/favoriteStore'
 import { useAuthStore } from '../../stores/authStore'
 import { useToast } from '../../composables/useToast'
-import { translateCategory } from '../../utils/translator'
+import { translateCategory, translateComment } from '../../utils/translator'
 import { getDiscountedPrice, hasDiscount as hasProductDiscount, getDiscountLabel as getProductDiscountLabel } from '../../utils/discount'
 
 const route = useRoute()
@@ -410,12 +424,10 @@ const zoomY = ref(50)
 
 const handleMouseMove = (event) => {
   const rect = event.currentTarget.getBoundingClientRect()
-  const x = event.clientX - rect.left
-  const y = event.clientY - rect.top
-  
-  // Calculate cursor percentage position inside container box
-  zoomX.value = (x / rect.width) * 100
-  zoomY.value = (y / rect.height) * 100
+  const x = ((event.clientX - rect.left) / rect.width) * 100
+  const y = ((event.clientY - rect.top) / rect.height) * 100
+  zoomX.value = x
+  zoomY.value = y
 }
 
 // New review fields
@@ -432,6 +444,72 @@ const discountedPrice = computed(() => {
 
 const hasDiscount = (item) => hasProductDiscount(item)
 const discountLabel = (item) => getProductDiscountLabel(item)
+
+const countdownText = ref('')
+let countdownInterval = null
+
+const startCountdown = () => {
+  if (countdownInterval) clearInterval(countdownInterval)
+  
+  const update = () => {
+    if (!product.value || !product.value.discountEndsAt) {
+      countdownText.value = ''
+      return
+    }
+    
+    const endsAt = String(product.value.discountEndsAt || '')
+    if (!endsAt) {
+      countdownText.value = 'Süresiz İndirim'
+      return
+    }
+
+    let expiryDate;
+    if (endsAt.includes('T') || endsAt.includes(':')) {
+      expiryDate = new Date(endsAt)
+    } else {
+      expiryDate = new Date(`${endsAt}T23:59:59`)
+    }
+
+    const diffMs = expiryDate - new Date()
+    if (diffMs <= 0) {
+      countdownText.value = 'Kampanya sona erdi'
+      return
+    }
+
+    const diffSecs = Math.floor(diffMs / 1000)
+    const secs = diffSecs % 60
+    const diffMins = Math.floor(diffSecs / 60)
+    const mins = diffMins % 60
+    const diffHours = Math.floor(diffMins / 60)
+    const hours = diffHours % 24
+    const days = Math.floor(diffHours / 24)
+
+    let text = ''
+    if (days > 0) {
+      text += `${days} gün `
+    }
+    if (hours > 0 || days > 0) {
+      text += `${hours} saat `
+    }
+    if (mins > 0 || hours > 0 || days > 0) {
+      text += `${mins} dk `
+    }
+    text += `${secs} sn`
+    
+    countdownText.value = `Kalan Süre: ${text}`
+  }
+
+  update()
+  countdownInterval = setInterval(update, 1000)
+}
+
+watch(product, () => {
+  startCountdown()
+}, { immediate: true })
+
+onUnmounted(() => {
+  if (countdownInterval) clearInterval(countdownInterval)
+})
 
 const categoryName = translateCategory;
 
@@ -465,7 +543,12 @@ const translateInfo = (text) => {
 
 // Reviews state (supports existing reviews or fallbacks if none loaded from DummyJSON)
 const localReviews = ref([])
-const reviewsList = computed(() => localReviews.value)
+const reviewsList = computed(() => {
+  return localReviews.value.map(review => ({
+    ...review,
+    comment: translateComment(review.comment)
+  }))
+})
 
 const similarProducts = computed(() => {
   if (!product.value) return []
@@ -529,17 +612,29 @@ const requireLogin = message => {
 }
 
 const addToCart = () => {
+  if (authStore.isAdmin) {
+    addToast('Admin sayfasında sepete ürün eklenemez.', 'warning')
+    return
+  }
   if (!requireLogin('Sepete eklemek için lütfen giriş yapın.')) return
   cartStore.addToCart(product.value, quantitySelected.value)
-  addToast(`Sepete ${quantitySelected.value} adet ürün eklendi.`)
+  router.push('/cart')
 }
 
 const toggleFavorite = () => {
+  if (authStore.isAdmin) {
+    addToast('Admin sayfasında favorilere ürün eklenemez.', 'warning')
+    return
+  }
   if (!requireLogin('Favorilere eklemek için lütfen giriş yapın.')) return
   favoriteStore.toggleFavorite(product.value)
 }
 
 const buyNow = () => {
+  if (authStore.isAdmin) {
+    addToast('Admin sayfasında sepete ürün eklenemez.', 'warning')
+    return
+  }
   if (!requireLogin('Satın almak için lütfen giriş yapın.')) return
   cartStore.addToCart(product.value, quantitySelected.value)
   router.push('/cart')
@@ -557,11 +652,21 @@ const formatDate = (dateString) => {
 
 // Submit a new review (Saved in localStorage)
 const submitReview = () => {
-  if (!newReviewName.value || !newReviewComment.value) return
+  const name = newReviewName.value.trim();
+  const comment = newReviewComment.value.trim();
+  
+  if (!name) {
+    addToast('Lütfen yorum yapabilmek için adınızı girin.', 'warning');
+    return;
+  }
+  if (!comment) {
+    addToast('Lütfen yorum metnini girin.', 'warning');
+    return;
+  }
   
   const newReview = {
-    reviewerName: newReviewName.value,
-    comment: newReviewComment.value,
+    reviewerName: name,
+    comment: comment,
     rating: newReviewRating.value,
     date: new Date().toISOString()
   }

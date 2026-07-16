@@ -1,6 +1,6 @@
 export const isDiscountActive = (item) => {
-  const discountType = item?.discountType || (Number(item?.discountPercentage) > 0 ? 'percent' : 'none')
-  const discountValue = Number(item?.discountValue ?? item?.discountPercentage ?? 0) || 0
+  const discountType = item?.discountType || 'none'
+  const discountValue = Number(item?.discountValue ?? 0)
 
   if (discountType === 'none' || discountValue <= 0) {
     return false
@@ -10,11 +10,12 @@ export const isDiscountActive = (item) => {
     return true
   }
 
+  const endsAt = String(item.discountEndsAt)
   let expiryDate;
-  if (item.discountEndsAt.includes('T') || item.discountEndsAt.includes(':')) {
-    expiryDate = new Date(item.discountEndsAt)
+  if (endsAt.includes('T') || endsAt.includes(':')) {
+    expiryDate = new Date(endsAt)
   } else {
-    expiryDate = new Date(`${item.discountEndsAt}T23:59:59`)
+    expiryDate = new Date(`${endsAt}T23:59:59`)
   }
 
   if (Number.isNaN(expiryDate.getTime())) {
@@ -30,8 +31,8 @@ export const getDiscountedPrice = (item) => {
     return price
   }
 
-  const discountType = item?.discountType || (Number(item?.discountPercentage) > 0 ? 'percent' : 'none')
-  const discountValue = Number(item?.discountValue ?? item?.discountPercentage ?? 0) || 0
+  const discountType = item?.discountType || 'none'
+  const discountValue = Number(item?.discountValue ?? 0)
 
   if (discountType === 'percent' && discountValue > 0) {
     return Math.max(price - (price * discountValue / 100), 0)
@@ -59,8 +60,8 @@ export const getDiscountLabel = (item) => {
     return ''
   }
 
-  const discountType = item?.discountType || (Number(item?.discountPercentage) > 0 ? 'percent' : 'none')
-  const discountValue = Number(item?.discountValue ?? item?.discountPercentage ?? 0) || 0
+  const discountType = item?.discountType || 'none'
+  const discountValue = Number(item?.discountValue ?? 0)
 
   if (discountType === 'percent' && discountValue > 0) {
     return `%${Math.round(discountValue)} İndirim`

@@ -479,6 +479,11 @@ const saveDiscount = () => {
     return
   }
 
+  if (discountType.value === 'amount' && Number(discountValue.value) >= Number(selectedProduct.value.price)) {
+    addToast('İndirim tutarı ürün fiyatından yüksek veya eşit olamaz.', 'warning')
+    return
+  }
+
   if (discountType.value === 'none' || Number(discountValue.value) <= 0) {
     clearDiscount()
     return

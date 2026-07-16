@@ -4,7 +4,7 @@ import { useFavoriteStore } from './favoriteStore';
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
-    user: JSON.parse(localStorage.getItem('user')) || null,
+    user: JSON.parse(sessionStorage.getItem('user')) || null,
   }),
   
   getters: {
@@ -18,13 +18,13 @@ export const useAuthStore = defineStore('auth', {
       this.user = userData;
       
       
-      localStorage.setItem('user', JSON.stringify(userData));
+      sessionStorage.setItem('user', JSON.stringify(userData));
     },
     
     
     logout() {
       this.user = null;
-      localStorage.removeItem('user');
+      sessionStorage.removeItem('user');
       
       try {
         const cartStore = useCartStore();

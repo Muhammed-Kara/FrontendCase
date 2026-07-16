@@ -11,13 +11,13 @@ export const useFavoriteStore = defineStore('favorite', {
     totalFavorites: (state) => state.favorites.length,
 
     isFavorite: (state) => (id) => {
-      return state.favorites.some(item => item.id === id);
+      return state.favorites.some(item => String(item.id) === String(id));
     }
   },
   
   actions: {
     toggleFavorite(product) {
-      const index = this.favorites.findIndex(item => item.id === product.id);
+      const index = this.favorites.findIndex(item => String(item.id) === String(product.id));
       
       if (index === -1) {
         this.favorites.push(product);
@@ -30,7 +30,7 @@ export const useFavoriteStore = defineStore('favorite', {
     },
 
     removeFavorite(productId) {
-      this.favorites = this.favorites.filter(item => item.id !== productId);
+      this.favorites = this.favorites.filter(item => String(item.id) !== String(productId));
       sessionStorage.setItem('favorites', JSON.stringify(this.favorites));
     },
 

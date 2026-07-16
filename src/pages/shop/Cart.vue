@@ -66,9 +66,24 @@
                 <h3 class="font-serif text-sm font-semibold text-[#1E3A32] group-hover/item:text-[#C97A62] transition-colors duration-300">
                   {{ item.title }}
                 </h3>
-                <p class="font-serif text-sm font-semibold text-[#C97A62] mt-1">
-                  {{ Number(item.price).toFixed(2) }} TL
-                </p>
+                <div class="mt-1 flex items-center gap-2 flex-wrap">
+                  <template v-if="item.originalPrice && item.discountedPrice">
+                    <strong class="font-serif text-sm font-semibold text-[#C97A62]">
+                      {{ Number(item.discountedPrice).toFixed(2) }} TL
+                    </strong>
+                    <span class="text-xs text-stone-400 line-through font-serif">
+                      {{ Number(item.originalPrice).toFixed(2) }} TL
+                    </span>
+                    <span v-if="item.promo" class="text-[9px] font-bold text-white bg-[#C97A62] px-1.5 py-0.5 rounded shadow-xs">
+                      {{ item.promo }}
+                    </span>
+                  </template>
+                  <template v-else>
+                    <strong class="font-serif text-sm font-semibold text-[#C97A62]">
+                      {{ Number(item.price).toFixed(2) }} TL
+                    </strong>
+                  </template>
+                </div>
               </div>
             </router-link>
 
@@ -171,10 +186,6 @@
                 </button>
               </div>
 
-              <!-- Suggestion note if they have copy/pasted something but forgot to apply -->
-              <p v-if="copiedCouponSuggestion && !cartStore.activeDiscountCode" class="text-[8px] text-white/50 italic leading-relaxed pt-1">
-                * Şans çarkından kazandığınız kod: <span class="font-bold text-white cursor-pointer underline hover:text-[#C97A62]" @click="applySuggestedCoupon">{{ copiedCouponSuggestion }}</span>
-              </p>
             </div>
             
             <div class="border-t border-white/10 my-4"></div>
@@ -199,7 +210,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import DefaultLayout from '../../layouts/DefaultLayout.vue';
 import { useCartStore } from '../../stores/cartStore';
@@ -214,6 +225,11 @@ const { addToast } = useToast();
 const checkoutSuccess = ref(false);
 const couponCodeInput = ref('');
 const copiedCouponSuggestion = ref(sessionStorage.getItem('last_won_coupon') || null);
+
+onMounted(async () => {
+  await productStore.loadProducts();
+  cartStore.removeDiscount();
+});
 
 const discountAmount = computed(() => {
   return (cartStore.subtotal - cartStore.totalPrice).toFixed(2);
@@ -260,13 +276,26 @@ const applySuggestedCoupon = () => {
 
 const handleCheckout = () => {
   if (cartStore.cartItems.length > 0) {
+    // Check if any product has insufficient stock first
+    const outOfStockItems = [];
+    for (const item of cartStore.cartItems) {
+      const product = productStore.products.find(p => String(p.id) === String(item.id));
+      if (!product || product.stock < item.quantity) {
+        outOfStockItems.push(item.title);
+      }
+    }
+
+    if (outOfStockItems.length > 0) {
+      const list = outOfStockItems.join(', ');
+      addToast(`"${list}" ürünü/ürünleri için yeterli stok bulunmamaktadır.`, 'warning');
+      return;
+    }
+
     const success = productStore.sellMultipleProducts(cartStore.cartItems);
     if (success) {
       checkoutSuccess.value = true;
       cartStore.clearCart();
       cartStore.removeDiscount(); // Clear coupon after order
-    } else {
-      alert('Bazı ürünlerin stoğu yetersiz olduğu için işlem tamamlanamadı.');
     }
   }
 };

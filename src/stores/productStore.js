@@ -9,12 +9,16 @@ export const useProductStore = defineStore('product', {
   state: () => ({
     products: JSON.parse(localStorage.getItem('products')) || [],
     isLoading: false,
+    shopSearchQuery: '',
+    shopSelectedCategory: '',
+    shopSortBy: 'featured',
+    shopCurrentPage: 1
   }),
   
   actions: {
     async loadProducts() {
       const isOriginalLoaded = localStorage.getItem('database_original_dummyjson_v5');
-      if (this.products.length > 250 || !isOriginalLoaded) {
+      if (this.products.length === 0 || !isOriginalLoaded || this.products.length > 250) {
         this.isLoading = true;
         try {
           const apiProducts = await fetchInitialProducts();
@@ -87,8 +91,10 @@ export const useProductStore = defineStore('product', {
     addProduct(productData) {
       const newProduct = { 
         ...productData, 
+        price: Number(productData.price || 0),
+        stock: Number(productData.stock || 0),
         id: Date.now(),
-        rating: productData.rating || 0,
+        rating: Number(productData.rating || 0),
         discountPercentage: 0,
         discountType: 'none',
         discountValue: 0,
@@ -102,6 +108,8 @@ export const useProductStore = defineStore('product', {
       const index = this.products.findIndex(p => p.id === updatedProduct.id);
       if (index !== -1) {
         const product = { ...updatedProduct };
+        product.price = Number(updatedProduct.price || 0);
+        product.stock = Number(updatedProduct.stock || 0);
         // Discount alanlarının güvenliğini sağla
         product.discountPercentage = updatedProduct.discountType === 'percent' ? Number(updatedProduct.discountValue || 0) : 0;
         product.discountValue = Number(updatedProduct.discountValue || 0);
@@ -132,29 +140,31 @@ export const useProductStore = defineStore('product', {
       return true;
     },
     
-    // Çoklu ürün satışı
     sellMultipleProducts(items) {
       const salesStore = useSalesStore();
-      const successfulItems = [];
       
+      // 1. Verify if ALL items have sufficient stock
       for (const item of items) {
-        const product = this.products.find(p => p.id === item.id);
-        if (product && product.stock >= item.quantity) {
-          product.stock -= item.quantity;
-          successfulItems.push({
-            ...item,
-            price: item.discountedPrice || item.price
-          });
+        const product = this.products.find(p => String(p.id) === String(item.id));
+        if (!product || product.stock < item.quantity) {
+          return false; // Abort entire transaction immediately
         }
       }
       
-      if (successfulItems.length > 0) {
-        this.saveToLocalStorage();
-        salesStore.recordSale(successfulItems);
-        return true;
+      // 2. Perform the sale for all items since they are all available
+      const successfulItems = [];
+      for (const item of items) {
+        const product = this.products.find(p => String(p.id) === String(item.id));
+        product.stock -= item.quantity;
+        successfulItems.push({
+          ...item,
+          price: item.discountedPrice || item.price
+        });
       }
       
-      return false;
+      this.saveToLocalStorage();
+      salesStore.recordSale(successfulItems);
+      return true;
     },
     
     saveToLocalStorage() {
